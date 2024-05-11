@@ -11,10 +11,10 @@ import (
 func main() {
 
 	//Alphabet to use (case sensitive)
-	alphabet := "abcdefghijklmnopqrstuvwxyz"
+	alphabet := []rune("abcdefghijklmnopqrstuvwxyzæøå")
 
-	//Hex encoded md5 hash we want to crack (My dog = ramos)
-	target := "db3b992995b36a9d2ac616ea2867b14a"
+	//Hex encoded md5 hash we want to crack (My dog = "æblet" = Danish for "The apple" to test utf8)
+	const target string = "179eddcf882aef741257145e46e8820f"
 
 	fmt.Println("Attempting to solve:", target)
 
@@ -25,13 +25,14 @@ func main() {
 }
 
 // Returns bruteforced MD5 hash
-func bruteforce(alphabet string, target string) string {
+func bruteforce(alphabet []rune, target string) string {
 	//We convert the md5 string (hex encoded) into pure bytes
 	targetBytes, _ := hex.DecodeString(target)
 
 	//Initialize the first byte to be the first rune.
-	attempt := make([]byte, 1)
+	attempt := make([]rune, 1)
 	attempt[0] = alphabet[0]
+
 	for {
 
 		//Rollover next character in array
@@ -56,18 +57,18 @@ func bruteforce(alphabet string, target string) string {
 		}
 
 		//Hash our byte array.
-		hash := md5.Sum(attempt)
+		hash := md5.Sum([]byte(string(attempt)))
 		//We perform fast equality checks using the built in bytes comparison
 		if bytes.Equal(hash[:], targetBytes) {
 			return string(attempt)
 		}
 	}
 }
-func index(alphabet string, b byte) int {
+func index(alphabet []rune, r rune) int {
 	for i := 0; i < len(alphabet); i++ {
-		if b == byte(alphabet[i]) {
+		if r == alphabet[i] {
 			return i
 		}
 	}
-	panic("Rune " + string(b) + " not found in alphabet:" + alphabet)
+	panic("Rune " + string(r) + " not found in alphabet")
 }

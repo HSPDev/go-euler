@@ -100,7 +100,7 @@ func hashAndCheck(permutations <-chan [1024]string, target string, result chan<-
 // Returns bruteforced MD5 hash
 func bruteforce(alphabet []rune, target string) string {
 
-	permutations := make(chan [1024]string, 1024*1024) //Generates new permutations (unhashed, hash guesses). Closing signals hashers must shut down.
+	permutations := make(chan [1024]string, 1024) //Generates new permutations (unhashed, hash guesses). Closing signals hashers must shut down.
 	result := make(chan string)                        //The matching hash, when we find it.
 	done := make(chan bool)                            //Signals that the permutator must shut down.
 

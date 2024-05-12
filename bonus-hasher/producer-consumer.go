@@ -91,13 +91,25 @@ func hashAndCheck(permutations <-chan string, target string, result chan<- strin
 // Returns bruteforced MD5 hash
 func bruteforce(alphabet []rune, target string) string {
 
-	permutations := make(chan string, 1024*10) //Generates new permutations (unhashed, hash guesses). Closing signals hashers must shut down.
-	result := make(chan string)                //The matching hash, when we find it.
-	done := make(chan bool)                    //Signals that the permutator must shut down.
+	permutations := make(chan string, 1024*1024) //Generates new permutations (unhashed, hash guesses). Closing signals hashers must shut down.
+	result := make(chan string)                  //The matching hash, when we find it.
+	done := make(chan bool)                      //Signals that the permutator must shut down.
 
 	//Spawn two processes to permuate and hash.
 	go permutate(alphabet, permutations, done)
-	go hashAndCheck(permutations, target, result)
+
+	for i := 1; i <= 4; i++ {
+		fmt.Println("Spawning hashing process:", i)
+		go hashAndCheck(permutations, target, result)
+	}
+
+	//Monitor for starvation (we'll just let it exit with the main program flow)
+	go func() {
+		for {
+			fmt.Println("Strings waiting to hash: ", len(permutations))
+			time.Sleep(time.Second)
+		}
+	}()
 
 	//Wait for our result and store it.
 	match := <-result
@@ -107,6 +119,7 @@ func bruteforce(alphabet []rune, target string) string {
 
 	return match
 }
+
 func index(alphabet []rune, r rune) int {
 	for i := 0; i < len(alphabet); i++ {
 		if r == alphabet[i] {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"runtime"
 	"time"
+	"unicode/utf8"
 )
 
 func main() {
@@ -27,13 +28,13 @@ func main() {
 	fmt.Println("Time to run:", elapsed)
 }
 
-func permutate(alphabet []rune, permutations chan<- [1024]string, done <-chan bool) {
+func permutate(alphabet []rune, permutations chan<- [1024][]byte, done <-chan bool) {
 
 	//Initialize the first byte to be the first rune.
 	attempt := make([]rune, 1)
 	attempt[0] = alphabet[0]
 
-	var batch [1024]string
+	var batch [1024][]byte
 
 	for {
 		//Make a batch of 1024 permutations.
@@ -58,8 +59,22 @@ func permutate(alphabet []rune, permutations chan<- [1024]string, done <-chan bo
 				attempt[rolloverPosition] = alphabet[n]
 				break
 			}
+			
+			//Convert runes to byte array manually.
+			size := 0
+	    	for _, r := range attempt {
+		        size += utf8.RuneLen(r)
+		    }
+
+		    bs := make([]byte, size)
+
+		    count := 0
+		    for _, r := range attempt {
+		        count += utf8.EncodeRune(bs[count:], r)
+		    }
+
 			//Insert the string into a batch
-			batch[i] = string(attempt)
+			batch[i] = bs
 		}
 
 		permutations <- batch
@@ -74,7 +89,7 @@ func permutate(alphabet []rune, permutations chan<- [1024]string, done <-chan bo
 	}
 }
 
-func hashAndCheck(permutations <-chan [1024]string, target string, result chan<- string) {
+func hashAndCheck(permutations <-chan [1024][]byte, target string, result chan<- string) {
 	//We convert the md5 string (hex encoded) into pure bytes
 	targetBytes, _ := hex.DecodeString(target)
 
@@ -86,11 +101,11 @@ func hashAndCheck(permutations <-chan [1024]string, target string, result chan<-
 
 		for i := 0; i < 1024; i++ {
 			//Hash our byte array.
-			hash := md5.Sum([]byte(batch[i]))
+			hash := md5.Sum(batch[i])
 
 			//We perform fast equality checks using the built in bytes comparison
 			if bytes.Equal(hash[:], targetBytes) {
-				result <- batch[i]
+				result <- string(batch[i])
 				return
 			}
 		}
@@ -100,7 +115,7 @@ func hashAndCheck(permutations <-chan [1024]string, target string, result chan<-
 // Returns bruteforced MD5 hash
 func bruteforce(alphabet []rune, target string) string {
 
-	permutations := make(chan [1024]string, 1024) //Generates new permutations (unhashed, hash guesses). Closing signals hashers must shut down.
+	permutations := make(chan [1024][]byte, 1024) //Generates new permutations (unhashed, hash guesses). Closing signals hashers must shut down.
 	result := make(chan string)                   //The matching hash, when we find it.
 	done := make(chan bool)                       //Signals that the permutator must shut down.
 

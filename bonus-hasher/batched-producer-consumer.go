@@ -116,7 +116,7 @@ func bruteforce(alphabet []rune, target string) string {
 	go func() {
 		for {
 			fmt.Println("Strings waiting to hash: ", len(permutations))
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond*100)
 		}
 	}()
 

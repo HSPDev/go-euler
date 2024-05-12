@@ -13,7 +13,7 @@ func main() {
 	//Alphabet to use (case sensitive)
 	alphabet := []rune("abcdefghijklmnopqrstuvwxyzæøå")
 
-	//Hex encoded md5 hash we want to crack (My dog = "æblet" = Danish for "The apple" to test utf8)
+	//Hex encoded md5 hash we want to crack ("æblet" = Danish for "The apple" to test utf8)
 	const target string = "179eddcf882aef741257145e46e8820f"
 
 	fmt.Println("Attempting to solve:", target)

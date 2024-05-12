@@ -79,8 +79,8 @@ func hashAndCheck(permutations <-chan [1024]string, target string, result chan<-
 	targetBytes, _ := hex.DecodeString(target)
 
 	for {
-		batch, read := <-permutations
-		if !read {
+		batch, open := <-permutations
+		if !open {
 			return
 		}
 
@@ -101,8 +101,8 @@ func hashAndCheck(permutations <-chan [1024]string, target string, result chan<-
 func bruteforce(alphabet []rune, target string) string {
 
 	permutations := make(chan [1024]string, 1024) //Generates new permutations (unhashed, hash guesses). Closing signals hashers must shut down.
-	result := make(chan string)                        //The matching hash, when we find it.
-	done := make(chan bool)                            //Signals that the permutator must shut down.
+	result := make(chan string)                   //The matching hash, when we find it.
+	done := make(chan bool)                       //Signals that the permutator must shut down.
 
 	//Spawn two processes to permuate and hash.
 	go permutate(alphabet, permutations, done)
@@ -116,15 +116,17 @@ func bruteforce(alphabet []rune, target string) string {
 	go func() {
 		for {
 			fmt.Println("Strings waiting to hash: ", len(permutations))
-			time.Sleep(time.Millisecond*100)
+			time.Sleep(time.Millisecond * 100)
 		}
 	}()
 
 	//Wait for our result and store it.
 	match := <-result
+	close(result)
 
-	//Tell the permutator to shut down (this closes permutations)
+	//Tell the permutator to shut down
 	done <- true
+	close(done)
 
 	return match
 }
